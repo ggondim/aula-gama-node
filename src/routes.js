@@ -4,9 +4,12 @@ const AutorizacaoController = require('./controllers/AutorizacaoController.js');
 
 module.exports = [
   {
-    method: 'PUT',
+    method: 'GET',
     path: '/javascript',
     handler: LinguagemController.javascript,
+    config: {
+      auth: false
+    }
   },
   {
     method: 'POST',

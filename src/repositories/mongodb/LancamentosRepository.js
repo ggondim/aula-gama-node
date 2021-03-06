@@ -1,12 +1,19 @@
 const { Binary } = require('mongodb');
 const MongoDbRepository = require('./MongoDbRepository.js');
 
-
 class LancamentosRepository extends MongoDbRepository {
+  /**
+   * Inicializa uma nova instância da classe LancamentosRepository
+   * @param {Db} db Instância de banco de dados do MongoDB (db)
+   */
   constructor(db) {
     super(db, 'lancamentos');
   }
 
+  /**
+   * Converte a propriedade `imagem` de um objeto para um Binary do MongoDB
+   * @param {Object} doc Objeto com a propriedade imagem a ser convertida.
+   */
   converterImagemBase64(doc) {
     if (doc.imagem) {
       const buffer = Buffer.from(doc.imagem, 'base64');
@@ -14,6 +21,10 @@ class LancamentosRepository extends MongoDbRepository {
     }
   }
 
+  /**
+   * Converte a propriedade `categoria` de um objeto para um ObjectId correspondente à categoria no banco de dados
+   * @param {Object} doc Objeto com a propriedade `categoria` a ser convertida.
+   */
   async converterNomeCategoria(doc) {
     if (doc.categoria) {
       const query = { nome: doc.categoria };
@@ -23,6 +34,14 @@ class LancamentosRepository extends MongoDbRepository {
     }
   }
 
+  /**
+   * Insere um novo lançamento no banco de dados.
+   * @async
+   * @param {Object} doc Documento a ser inserido no banco de dados.
+   * @returns {Promise<Object>} Promise resolvida com o documento inserido, junto com a propriedade _id
+   * @example
+   * repositorio = await insert({ valor: -69.47 })
+   */
   async insert(doc) {
     this.converterImagemBase64(doc);
     await this.converterNomeCategoria(doc);
@@ -54,18 +73,22 @@ class LancamentosRepository extends MongoDbRepository {
         $group: { _id: '$categoria', total: { $sum: '$$ROOT.valor' } }
       },
       {
-        $lookup: {
-          from: 'categorias',
-          localField: '_id',
-          foreignField: '_id',
-          as: 'categoria'
+        $lookup:
+        {
+            from: 'categorias',
+            let: { idCategoria: '$_id' },
+            pipeline: [
+                { $match: { $expr: { $eq: ['$$idCategoria', '$_id'] } } },
+                { $project: { nome: 1, _id: 0 } }
+            ],
+            as: 'categoria'
         }
       },
       {
-        $unwind: '$categoria'
+          $unwind: '$categoria'
       },
       {
-        $project: { total: 1, categoria: '$categoria.nome', _id: 0 }
+          $project: { _id: 0, categoria: '$categoria.nome', total: 1 }
       }
     ]).toArray();
 
