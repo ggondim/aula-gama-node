@@ -1,4 +1,5 @@
 const fetch = require('node-fetch');
+const Headers = fetch.Headers;
 
 class RestRepository {
   /**
@@ -8,6 +9,10 @@ class RestRepository {
   constructor(apiUrl, resourcePath) {
     this.apiUrl = apiUrl;
     this.resourcePath = resourcePath;
+
+    const headers = new Headers();
+    headers.set('Content-Type', 'application/json');
+    this.defaultOptions = { headers };
   }
 
   get apiEndpoint() {
@@ -15,18 +20,19 @@ class RestRepository {
   }
 
   async list() {
-    const res = await fetch(this.apiEndpoint);
+    const res = await fetch(this.apiEndpoint, { ...this.defaultOptions });
     return res.json();
   }
 
   async getById(id) {
     const url = `${this.apiEndpoint}/${id}`;
-    const res = await fetch(url);
+    const res = await fetch(url, { ...this.defaultOptions });
     return res.json();
   }
 
   async insert(obj) {
     const res = await fetch(this.apiEndpoint, {
+      ...this.defaultOptions,
       method: 'POST',
       body: JSON.stringify(obj)
     });
@@ -37,6 +43,7 @@ class RestRepository {
     const url = `${this.apiEndpoint}/${id}`;
 
     const res = await fetch(url, {
+      ...this.defaultOptions,
       method: 'PATCH',
       body: JSON.stringify(obj)
     });
@@ -46,6 +53,7 @@ class RestRepository {
   async delete(id) {
     const url = `${this.apiEndpoint}/${id}`;
     const res = await fetch(url, {
+      ...this.defaultOptions,
       method: 'DELETE'
     });
     return res.json();
